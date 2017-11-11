@@ -143,7 +143,7 @@ def get_rutes():
 def download_image(uuid):
     filename = "{}.jpg".format(db.session.query(Rute).filter_by(uuid=uuid).first().id)
     if not os.path.exists(os.path.join('static', filename)):
-        return 204
+        return "No file", 204
     return send_from_directory('static', filename)
 
 
