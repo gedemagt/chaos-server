@@ -141,8 +141,10 @@ def get_rutes():
 
 @app.route('/download/<string:uuid>', methods=['POST'])
 def download_image(uuid):
-
-    return send_from_directory('static', "{}.jpg".format(db.session.query(Rute).filter_by(uuid=uuid).first().id))
+    filename = "{}.jpg".format(db.session.query(Rute).filter_by(uuid=uuid).first().id)
+    if not os.path.exists(os.path.join('static', filename)):
+        return 204
+    return send_from_directory('static', filename)
 
 
 @app.route('/get_gyms', methods=['GET'])
