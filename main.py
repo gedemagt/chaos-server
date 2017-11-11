@@ -84,8 +84,7 @@ def upload():
 @app.route('/add_image/<string:uuid>', methods=['POST'])
 def upload_image(uuid):
     f = request.files['file']
-
-    filename = "{}.jpg".format(uuid)
+    filename = "{}.jpg".format(db.session.query(Rute).filter_by(uuid=uuid).first().id)
     f.save(os.path.join('static', filename))
 
     return "Succes"
@@ -142,7 +141,8 @@ def get_rutes():
 
 @app.route('/download/<string:uuid>', methods=['POST'])
 def download_image(uuid):
-    return send_from_directory('static', "{}.jpg".format(uuid))
+
+    return send_from_directory('static', "{}.jpg".format(db.session.query(Rute).filter_by(uuid=uuid).first().id))
 
 
 @app.route('/get_gyms', methods=['GET'])
