@@ -3,8 +3,13 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
 
+def get_sql_position():
+    path = os.path.join(os.path.dirname(__file__), 'sql_path.txt')
+    with open(path) as f:
+        return f.readline()
+
 app = Flask(__name__, static_folder="static")
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/jesper/Desktop/a'
+app.config['SQLALCHEMY_DATABASE_URI'] = get_sql_position()
 db = SQLAlchemy(app)
 
 
