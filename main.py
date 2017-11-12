@@ -139,7 +139,7 @@ def get_rutes():
     return jsonify(r), 200
 
 
-@app.route('/download/<string:uuid>', methods=['POST'])
+@app.route('/download/<string:uuid>', methods=['GET','0;256;0c0;256;0cPOST'])
 def download_image(uuid):
     filename = "{}.jpg".format(db.session.query(Rute).filter_by(uuid=uuid).first().id)
     if not os.path.exists(os.path.join('static', filename)):
