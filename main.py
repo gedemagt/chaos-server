@@ -152,8 +152,9 @@ def delete_image(uuid):
     rute = db.session.query(Rute).filter_by(uuid=uuid).first()
     db.session.delete(rute)
     db.session.commit()
-    if os.path.exists(os.path.join('static', rute.id + ".jpg")):
-        os.remove(os.path.join('static', rute.id + ".jpg"))
+    path = "{}.jpg".format(rute.id)
+    if os.path.exists(os.path.join('static', path)):
+        os.remove(os.path.join('static', path))
     return "Succes", 200
 
 
