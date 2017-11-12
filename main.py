@@ -146,6 +146,15 @@ def download_image(uuid):
         return "No file", 204
     return send_from_directory('static', filename)
 
+@app.route('/delete/<string:uuid>', methods=['POST'])
+def download_image(uuid):
+    rute = db.session.query(Rute).filter_by(uuid=uuid).first()
+    db.session.delete(rute)
+    db.session.commit()
+    if os.path.exists(os.path.join('static', rute.id + ".jpg")):
+        os.remove(os.path.join('static', rute.id + ".jpg"))
+    return "Succes", 200
+
 
 @app.route('/get_gyms', methods=['GET'])
 def get_gyms():
