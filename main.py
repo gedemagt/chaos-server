@@ -237,8 +237,8 @@ if __name__ == "__main__":
     if "db" in sys.argv:
         print("Creates database")
         db.create_all()
-        db.session.add(Gym(uuid="uuid1", name="ÅK", lat=0.0, lon=0.0))
-        db.session.add(User(uuid="uuid2", name="Erik", password="pass", email="erik@gmail.com", gym=1))
-        db.session.commit()
+#        db.session.add(Gym(uuid="uuid1", name="ÅK", lat=0.0, lon=0.0))
+ #       db.session.add(User(uuid="uuid2", name="Erik", password="pass", email="erik@gmail.com", gym=1))
+  #      db.session.commit()
     else:
         app.run(debug=True)
