@@ -190,6 +190,7 @@ def get_users():
                    "date": str(user.date),
                    "name": user.name,
                    "email": user.email,
+                   "password":   user.password,
                    "uuid": user.uuid}
          for user in db.session.query(User)}
 
