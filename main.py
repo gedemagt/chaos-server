@@ -40,6 +40,7 @@ class Rute(db.Model):
     author = db.Column(db.Integer, db.ForeignKey('user.id'))
     gym = db.Column(db.Integer, db.ForeignKey('gym.id'))
     date = db.Column(db.DateTime, default=datetime.utcnow)
+    edit = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class Comment(db.Model):
@@ -73,9 +74,11 @@ def upload():
     author = request.json['author']
     gym = request.json['gym']
     date = request.json['date']
+    edit = request.json['edit']
     date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
+    edit = datetime.strptime(edit, '%Y-%m-%d %H:%M:%S')
 
-    db.session.add(Rute(uuid=uuid, name=name, coordinates="[]", author=author, gym=gym, date=date))
+    db.session.add(Rute(uuid=uuid, name=name, coordinates="[]", author=author, gym=gym, date=date, edit=edit))
     db.session.commit()
 
     return str(db.session.query(Rute).order_by(Rute.id.desc()).first().id)
@@ -94,9 +97,12 @@ def upload_image(uuid):
 def update_coordinates():
     coordinates = request.json['coordinates']
     uuid = request.json['uuid']
+    edit = request.json['edit']
+    edit = datetime.strptime(edit, '%Y-%m-%d %H:%M:%S')
 
     rute = db.session.query(Rute).filter_by(uuid=uuid).first()
     rute.coordinates = coordinates
+    rute.edit = edit
     db.session.commit()
     return "Succes"
 
@@ -130,6 +136,7 @@ def add_gym():
 def get_rutes():
     r = {rute.id: {"author": rute.author,
                    "date": str(rute.date),
+                   "edit": str(rute.edit),
                    "coordinates": rute.coordinates,
                    "gym": rute.gym,
                    "name": rute.name,
