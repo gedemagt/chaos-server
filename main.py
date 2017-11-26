@@ -36,11 +36,19 @@ class Rute(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     uuid = db.Column(db.String)
+    image = db.Column(db.String)
     coordinates = db.Column(db.String, default="{}")
     author = db.Column(db.Integer, db.ForeignKey('user.id'))
     gym = db.Column(db.Integer, db.ForeignKey('gym.id'))
     date = db.Column(db.DateTime, default=datetime.utcnow)
     edit = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Image(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    uuid = db.Column(db.String)
+    url = db.Column(db.String)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class Comment(db.Model):
@@ -71,6 +79,7 @@ def upload():
 
     name = request.json['name']
     uuid = request.json['uuid']
+    image = request.json['image']
     author = request.json['author']
     gym = request.json['gym']
     date = request.json['date']
@@ -78,7 +87,7 @@ def upload():
     date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
     edit = datetime.strptime(edit, '%Y-%m-%d %H:%M:%S')
 
-    db.session.add(Rute(uuid=uuid, name=name, coordinates="[]", author=author, gym=gym, date=date, edit=edit))
+    db.session.add(Rute(uuid=uuid, name=name, coordinates="[]", author=author, gym=gym, date=date, edit=edit, image=image))
     db.session.commit()
 
     return str(db.session.query(Rute).order_by(Rute.id.desc()).first().id)
@@ -87,9 +96,10 @@ def upload():
 @app.route('/add_image/<string:uuid>', methods=['POST'])
 def upload_image(uuid):
     f = request.files['file']
-    filename = "{}.jpg".format(db.session.query(Rute).filter_by(uuid=uuid).first().id)
-    f.save(os.path.join('static', filename))
-
+    filename = os.path.join('static', "{}.jpg".format(uuid))
+    f.save(filename)
+    db.session.add(Image(uuid=uuid, url=filename))
+    db.session.commit()
     return "Succes"
 
 
@@ -140,28 +150,29 @@ def get_rutes():
                    "coordinates": rute.coordinates,
                    "gym": rute.gym,
                    "name": rute.name,
+                   "image": rute.image,
                    "uuid": rute.uuid}
          for rute in db.session.query(Rute)}
 
     return jsonify(r), 200
 
 
-@app.route('/download/<string:uuid>', methods=['GET','POST'])
+@app.route('/download/<string:uuid>', methods=['GET', 'POST'])
 def download_image(uuid):
-    filename = "{}.jpg".format(db.session.query(Rute).filter_by(uuid=uuid).first().id)
-    if not os.path.exists(os.path.join('static', filename)):
+
+    url = db.session.query(Image).filter_by(uuid=uuid).first().url
+    if not os.path.exists(url):
         return "No file", 204
-    return send_from_directory('static', filename)
+    return send_from_directory('static', os.path.relpath(url, 'static'))
 
 
 @app.route('/delete/<string:uuid>', methods=['POST'])
 def delete_image(uuid):
     rute = db.session.query(Rute).filter_by(uuid=uuid).first()
-    db.session.delete(rute)
+    if rute is not None:
+        db.session.delete(rute)
     db.session.commit()
-    path = "{}.jpg".format(rute.id)
-    if os.path.exists(os.path.join('static', path)):
-        os.remove(os.path.join('static', path))
+
     return "Succes", 200
 
 
@@ -217,36 +228,11 @@ def get_user(uuid):
     return jsonify(r), 200
 
 
-# @app.route('/get_comments/<string:uuid>')
-# def get_comments(uuid):
-#     r = {comment.id: {"text": comment.text,
-#                       "date": str(comment.date),
-#                       "author": comment.author,
-#                       "rute": uuid}
-#          for comment in db.session.query(Comment).filter_by(rute=uuid)}
-#
-#     return jsonify(r), 200
-
-
-# @app.route('/get_ratings/<string:uuid>')
-# def get_ratings(uuid):
-#     r = {rating.uuid: {"rating": rating.rating,
-#                       "date": str(rating.date),
-#                       "author": rating.author,
-#                       "rute": uuid}
-#          for rating in db.session.query(Rating).filter_by(rute=uuid)}
-#
-#     return jsonify(r), 200
-
-
 if __name__ == "__main__":
 
     import sys
     if "db" in sys.argv:
         print("Creates database")
         db.create_all()
-#        db.session.add(Gym(uuid="uuid1", name="ÅK", lat=0.0, lon=0.0))
- #       db.session.add(User(uuid="uuid2", name="Erik", password="pass", email="erik@gmail.com", gym=1))
-  #      db.session.commit()
     else:
         app.run(debug=True)
