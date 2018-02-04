@@ -14,7 +14,7 @@ def get_sql_position():
 
 
 app = Flask(__name__, static_folder="static")
-app.config['SQLALCHEMY_DATABASE_URI'] = get_sql_position()
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + get_sql_position()
 db = SQLAlchemy(app)
 
 
@@ -236,13 +236,12 @@ def get_user(uuid):
 if __name__ == "__main__":
 
     import sys
-
     if "db" in sys.argv or not os.path.exists(get_sql_position()):
         print("Creates database")
         db.create_all()
         db.session.add(Gym(uuid="UnknowGym", name="Unknown Gym", lat=1, lon=1))
         db.session.add(User(uuid="admin", name="admin", password="admin", email="", gym="UnknowGym"))
         db.session.commit()
-        app.run(debug=True)
-    else:
-        app.run(debug=True)
+
+
+    app.run(debug=True)
