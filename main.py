@@ -3,10 +3,15 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
 
+
 def get_sql_position():
     path = os.path.join(os.path.dirname(__file__), 'sql_path.txt')
+    if not os.path.exists(path):
+        raise ValueError("No 'sql_path.txt' found! Please place a sql_path.txt in the same directory as main.py"
+                         "with one line: The path to the database!")
     with open(path) as f:
         return f.readline()
+
 
 app = Flask(__name__, static_folder="static")
 app.config['SQLALCHEMY_DATABASE_URI'] = get_sql_position()
@@ -231,8 +236,13 @@ def get_user(uuid):
 if __name__ == "__main__":
 
     import sys
-    if "db" in sys.argv:
+
+    if "db" in sys.argv or not os.path.exists(get_sql_position()):
         print("Creates database")
         db.create_all()
+        db.session.add(Gym(uuid="UnknowGym", name="Unknown Gym", lat=1, lon=1))
+        db.session.add(User(uuid="admin", name="admin", password="admin", email="", gym="UnknowGym"))
+        db.session.commit()
+        app.run(debug=True)
     else:
         app.run(debug=True)
