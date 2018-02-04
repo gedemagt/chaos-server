@@ -110,13 +110,20 @@ def upload_image(uuid):
 
 @app.route('/update_coordinates', methods=['POST'])
 def update_coordinates():
-    coordinates = request.json['coordinates']
+
     uuid = request.json['uuid']
+
+    coordinates = request.json['coordinates']
+
     edit = request.json['edit']
     edit = datetime.strptime(edit, '%Y-%m-%d %H:%M:%S')
 
     rute = db.session.query(Rute).filter_by(uuid=uuid).first()
     rute.coordinates = coordinates
+    if "name" in request.json:
+        rute.name = request.json["name"]
+    if "gym" in request.json:
+        rute.gym = request.json["gym"]
     rute.edit = edit
     db.session.commit()
     return "Succes"
