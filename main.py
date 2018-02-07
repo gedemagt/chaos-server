@@ -47,7 +47,7 @@ class Rute(db.Model):
     gym = db.Column(db.Integer, db.ForeignKey('gym.id'))
     date = db.Column(db.DateTime, default=datetime.utcnow)
     edit = db.Column(db.DateTime, default=datetime.utcnow)
-
+    grade = db.Column(db.String, default="NO_GRADE")
 
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -91,8 +91,9 @@ def upload():
     edit = request.json['edit']
     date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
     edit = datetime.strptime(edit, '%Y-%m-%d %H:%M:%S')
+    grade = request.json['grade'] if 'grade' in request.json else 'NO_GRADE'
 
-    db.session.add(Rute(uuid=uuid, name=name, coordinates="[]", author=author, gym=gym, date=date, edit=edit, image=image))
+    db.session.add(Rute(uuid=uuid, name=name, coordinates="[]", author=author, gym=gym, date=date, edit=edit, image=image, grade=grade))
     db.session.commit()
 
     return str(db.session.query(Rute).order_by(Rute.id.desc()).first().id)
@@ -124,6 +125,8 @@ def update_coordinates():
         rute.name = request.json["name"]
     if "gym" in request.json:
         rute.gym = request.json["gym"]
+    if 'grade' in request.json:
+        rute.grade = request.json['grade']
     rute.edit = edit
     db.session.commit()
     return "Succes"
@@ -157,6 +160,7 @@ def add_gym():
 @app.route('/get_rutes', methods=['GET'])
 def get_rutes():
     r = {rute.id: {"author": rute.author,
+                   "grade": rute.grade,
                    "date": str(rute.date),
                    "edit": str(rute.edit),
                    "coordinates": rute.coordinates,
