@@ -157,8 +157,10 @@ def add_gym():
     return "Succes"
 
 
-@app.route('/get_rutes', methods=['GET'])
+@app.route('/get_rutes', methods=['GET','POST'])
 def get_rutes():
+    last_sync = request.json['last_sync']
+
     r = {rute.id: {"author": rute.author,
                    "grade": rute.grade,
                    "date": str(rute.date),
@@ -168,7 +170,7 @@ def get_rutes():
                    "name": rute.name,
                    "image": rute.image,
                    "uuid": rute.uuid}
-         for rute in db.session.query(Rute)}
+         for rute in db.session.query(Rute).filter(Rute.edit > last_sync)}
 
     return jsonify(r), 200
 
@@ -204,7 +206,7 @@ def get_gyms():
     return jsonify(r), 200
 
 
-@app.route('/get_gym/<string:uuid>', methods=['POST'])
+@app.route('/get_gym/<string:uuid>', methods=['GET'])
 def get_gym(uuid):
 
     gym = db.session.query(Gym).filter_by(uuid=uuid).first()
@@ -214,7 +216,6 @@ def get_gym(uuid):
                   "lon": gym.lon,
                   "name": gym.name,
                   "uuid": gym.uuid}}
-
     return jsonify(r), 200
 
 
@@ -231,16 +232,19 @@ def get_users():
     return jsonify(r), 200
 
 
-@app.route('/get_user/<string:uuid>', methods=['POST'])
+@app.route('/get_user/<string:uuid>', methods=['GET'])
 def get_user(uuid):
 
     user = db.session.query(User).filter_by(uuid=uuid).first()
 
-    r = {user.uuid: {"gym": user.gym,
+    r = {user.id: {"gym": user.gym,
                    "date": str(user.date),
                    "name": user.name,
+                     "password": user.password,
+                     "uuid": user.uuid,
                    "email": user.email}}
 
+    print(r)
     return jsonify(r), 200
 
 
