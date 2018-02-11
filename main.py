@@ -109,6 +109,21 @@ def upload_image(uuid):
     return "Succes"
 
 
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.json['username']
+    password = request.json['password']
+
+    user = db.session.query(User).filter_by(name=username).first()
+    if user is None:
+        return 400, "No such user '{}'".format(username)
+
+    if user.password != password:
+        return 400, "Wrong password"
+
+    return user.uuid, 200
+
+
 @app.route('/update_coordinates', methods=['POST'])
 def update_coordinates():
 
@@ -240,8 +255,8 @@ def get_user(uuid):
     r = {user.id: {"gym": user.gym,
                    "date": str(user.date),
                    "name": user.name,
-                     "password": user.password,
-                     "uuid": user.uuid,
+                    "password": user.password,
+                    "uuid": user.uuid,
                    "email": user.email}}
 
     print(r)
