@@ -48,6 +48,7 @@ class Rute(db.Model):
     date = db.Column(db.DateTime, default=datetime.utcnow)
     edit = db.Column(db.DateTime, default=datetime.utcnow)
     grade = db.Column(db.String, default="NO_GRADE")
+    status = db.Column(db.Integer, default=0)
 
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -171,6 +172,15 @@ def add_gym():
     db.session.commit()
     return "Succes"
 
+@app.route('/check_username/<string:name>', methods=['POST'])
+def check_name(name):
+
+    user = db.session.query(User).filter_by(name=name).first()
+    if user is None:
+        return "Success", 200
+    else:
+        return "Error", 400
+
 
 @app.route('/get_rutes', methods=['GET','POST'])
 def get_rutes():
@@ -184,7 +194,8 @@ def get_rutes():
                    "gym": rute.gym,
                    "name": rute.name,
                    "image": rute.image,
-                   "uuid": rute.uuid}
+                   "uuid": rute.uuid,
+                   "status": rute.status}
          for rute in db.session.query(Rute).filter(Rute.edit > last_sync)}
 
     return jsonify(r), 200
@@ -203,7 +214,8 @@ def download_image(uuid):
 def delete_image(uuid):
     rute = db.session.query(Rute).filter_by(uuid=uuid).first()
     if rute is not None:
-        db.session.delete(rute)
+        rute.status = 1
+        rute.edit = datetime.utcnow()
     db.session.commit()
 
     return "Succes", 200
