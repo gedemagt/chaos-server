@@ -184,7 +184,9 @@ def check_name(name):
 
 @app.route('/get_rutes', methods=['GET','POST'])
 def get_rutes():
-    last_sync = request.json['last_sync']
+    last_sync = '1900-02-13 22:25:33'
+    if request.json and 'last_sync' in request.json:
+        last_sync = request.json.get('last_sync')
 
     r = {rute.id: {"author": rute.author,
                    "grade": rute.grade,
@@ -271,7 +273,6 @@ def get_user(uuid):
                     "uuid": user.uuid,
                    "email": user.email}}
 
-    print(r)
     return jsonify(r), 200
 
 
