@@ -64,3 +64,6 @@ for idd,name,uuid in p.fetchall():
             print("Deleted {}".format(name))
         except UnicodeEncodeError:
             print("Deleted id={}".format(idd))
+
+
+conn.close()
