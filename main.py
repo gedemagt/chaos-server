@@ -35,6 +35,7 @@ class User(db.Model):
     email = db.Column(db.String)
     gym = db.Column(db.Integer, db.ForeignKey('gym.id'))
     date = db.Column(db.DateTime, default=datetime.utcnow)
+    role = db.Column(db.String, default="BASIC")
 
 
 class Rute(db.Model):
@@ -267,7 +268,8 @@ def get_users():
                    "name": user.name,
                    "email": user.email,
                    "password":   user.password,
-                   "uuid": user.uuid}
+                   "uuid": user.uuid,
+                   "role": user.role}
          for user in db.session.query(User)}
 
     return jsonify(r), 200
@@ -283,7 +285,8 @@ def get_user(uuid):
                    "name": user.name,
                     "password": user.password,
                     "uuid": user.uuid,
-                   "email": user.email}}
+                   "email": user.email,
+                   "role": user.role}}
 
     return jsonify(r), 200
 
