@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
@@ -82,9 +82,11 @@ def index():
 
 @app.route('/add_rute', methods=['POST'])
 def upload():
+    uuid = request.json['uuid']
+    if db.session.query(Rute).filter_by(uuid=uuid).first() is not None:
+        abort(400)
 
     name = request.json['name']
-    uuid = request.json['uuid']
     image = request.json['image']
     author = request.json['author']
     gym = request.json['gym']
@@ -104,6 +106,8 @@ def upload():
 def upload_image(uuid):
     f = request.files['file']
     filename = os.path.join('static', "{}.jpg".format(uuid))
+    if os._exists(filename):
+        abort(400)
     f.save(filename)
     db.session.add(Image(uuid=uuid, url=filename))
     db.session.commit()
@@ -117,12 +121,12 @@ def login():
 
     user = db.session.query(User).filter_by(name=username).first()
     if user is None:
-        return 400, "No such user '{}'".format(username)
+        abort(400)
 
     if user.password != password:
-        return 400, "Wrong password"
+        abort(400)
 
-    return user.uuid, 200
+    return user.uuid
 
 
 @app.route('/update_coordinates', methods=['POST'])
@@ -136,6 +140,8 @@ def update_coordinates():
     edit = datetime.strptime(edit, '%Y-%m-%d %H:%M:%S')
 
     rute = db.session.query(Rute).filter_by(uuid=uuid).first()
+    if rute is None:
+        abort(400)
     rute.coordinates = coordinates
     if "name" in request.json:
         rute.name = request.json["name"]
@@ -155,7 +161,9 @@ def add_user():
     email = request.json['email']
     gym = request.json['gym']
     uuid = request.json['uuid']
-
+    print(db.session.query(User).filter_by(name=username))
+    if db.session.query(User).filter_by(name=username):
+        return jsonify(404, "User already exists")
     db.session.add(User(uuid=uuid, name=username, password=password, email=email, gym=gym))
     db.session.commit()
     return "Succes"
@@ -167,19 +175,24 @@ def add_gym():
     lat = request.json['lat']
     lon = request.json['lon']
     uuid = request.json['uuid']
+    print(db.session.query(Gym).filter_by(name=name).first())
 
-    db.session.add(Gym(uuid=uuid, name=name, lat=lat, lon=lon))
-    db.session.commit()
-    return "Succes"
+    if db.session.query(Gym).filter_by(name=name).first() is not None:
+        abort(400)
+    else:
+        db.session.add(Gym(uuid=uuid, name=name, lat=lat, lon=lon))
+        db.session.commit()
+        return "Succes"
+
 
 @app.route('/check_username/<string:name>', methods=['POST'])
 def check_name(name):
 
     user = db.session.query(User).filter_by(name=name).first()
     if user is None:
-        return "Success", 200
+        return "Success"
     else:
-        return "Error", 400
+        abort(400)
 
 
 @app.route('/get_rutes', methods=['GET','POST'])
