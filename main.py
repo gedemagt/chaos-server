@@ -161,9 +161,8 @@ def add_user():
     email = request.json['email']
     gym = request.json['gym']
     uuid = request.json['uuid']
-    print(db.session.query(User).filter_by(name=username))
-    if db.session.query(User).filter_by(name=username):
-        return jsonify(404, "User already exists")
+    if db.session.query(User).filter_by(name=username).first():
+        abort(400)
     db.session.add(User(uuid=uuid, name=username, password=password, email=email, gym=gym))
     db.session.commit()
     return "Succes"
