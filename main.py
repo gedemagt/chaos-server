@@ -51,6 +51,7 @@ class Rute(db.Model):
     grade = db.Column(db.String, default="NO_GRADE")
     status = db.Column(db.Integer, default=0)
 
+
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String)
@@ -97,7 +98,9 @@ def upload():
     edit = datetime.strptime(edit, '%Y-%m-%d %H:%M:%S')
     grade = request.json['grade'] if 'grade' in request.json else 'NO_GRADE'
 
-    db.session.add(Rute(uuid=uuid, name=name, coordinates="[]", author=author, gym=gym, date=date, edit=edit, image=image, grade=grade))
+    db.session.add(
+        Rute(uuid=uuid, name=name, coordinates="[]", author=author, gym=gym, date=date, edit=edit, image=image,
+             grade=grade))
     db.session.commit()
 
     return str(db.session.query(Rute).order_by(Rute.id.desc()).first().id)
@@ -132,7 +135,6 @@ def login():
 
 @app.route('/update_coordinates', methods=['POST'])
 def update_coordinates():
-
     uuid = request.json['uuid']
 
     coordinates = request.json['coordinates']
@@ -187,7 +189,6 @@ def add_gym():
 
 @app.route('/check_username/<string:name>', methods=['POST'])
 def check_name(name):
-
     user = db.session.query(User).filter_by(name=name).first()
     if user is None:
         return "Success"
@@ -195,7 +196,7 @@ def check_name(name):
         abort(400)
 
 
-@app.route('/get_rutes', methods=['GET','POST'])
+@app.route('/get_rutes', methods=['GET', 'POST'])
 def get_rutes():
     last_sync = '1900-02-13 22:25:33'
     if request.json and 'last_sync' in request.json:
@@ -218,7 +219,6 @@ def get_rutes():
 
 @app.route('/download/<string:uuid>', methods=['GET', 'POST'])
 def download_image(uuid):
-
     url = db.session.query(Image).filter_by(uuid=uuid).first().url
     if not os.path.exists(url):
         return "No file", 204
@@ -250,14 +250,13 @@ def get_gyms():
 
 @app.route('/get_gym/<string:uuid>', methods=['GET'])
 def get_gym(uuid):
-
     gym = db.session.query(Gym).filter_by(uuid=uuid).first()
 
     r = {uuid: {"lat": gym.lat,
-                  "date": str(gym.date),
-                  "lon": gym.lon,
-                  "name": gym.name,
-                  "uuid": gym.uuid}}
+                "date": str(gym.date),
+                "lon": gym.lon,
+                "name": gym.name,
+                "uuid": gym.uuid}}
     return jsonify(r), 200
 
 
@@ -267,7 +266,7 @@ def get_users():
                    "date": str(user.date),
                    "name": user.name,
                    "email": user.email,
-                   "password":   user.password,
+                   "password": user.password,
                    "uuid": user.uuid,
                    "role": user.role}
          for user in db.session.query(User)}
@@ -277,29 +276,46 @@ def get_users():
 
 @app.route('/get_user/<string:uuid>', methods=['GET'])
 def get_user(uuid):
-
     user = db.session.query(User).filter_by(uuid=uuid).first()
 
     r = {user.id: {"gym": user.gym,
                    "date": str(user.date),
                    "name": user.name,
-                    "password": user.password,
-                    "uuid": user.uuid,
+                   "password": user.password,
+                   "uuid": user.uuid,
                    "email": user.email,
                    "role": user.role}}
 
     return jsonify(r), 200
 
 
+@app.route("/set_role", methods=['POST'])
+def set_role():
+    j = request.get_json()
+    print(j)
+    uuid = j['uuid']
+    role = j['role']
+    vkey = j['validation_key']
+
+    with open('megasecretkeyfile.txt', 'r') as r:
+        validation_key = r.read()
+
+    if vkey == validation_key:
+        uuid = db.session.query(User).filter_by(uuid=uuid).first()
+        uuid.role = role
+        db.session.commit()
+    return "Succes", 200
+
+
 if __name__ == "__main__":
 
     import sys
+
     if "db" in sys.argv or not os.path.exists(get_sql_position()):
         print("Creates database")
         db.create_all()
         db.session.add(Gym(uuid="UnknowGym", name="Unknown Gym", lat=1, lon=1))
         db.session.add(User(uuid="admin", name="admin", password="admin", email="", gym="UnknowGym"))
         db.session.commit()
-
 
     app.run(debug=True)
