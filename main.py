@@ -33,6 +33,7 @@ class User(db.Model):
     uuid = db.Column(db.String)
     password = db.Column(db.String)
     email = db.Column(db.String)
+    role = db.Column(db.String)
     gym = db.Column(db.Integer, db.ForeignKey('gym.id'))
     date = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -161,9 +162,10 @@ def add_user():
     email = request.json['email']
     gym = request.json['gym']
     uuid = request.json['uuid']
+    role = request.json.get('role', 'USER')
     if db.session.query(User).filter_by(name=username).first():
         abort(400)
-    db.session.add(User(uuid=uuid, name=username, password=password, email=email, gym=gym))
+    db.session.add(User(uuid=uuid, name=username, password=password, email=email, gym=gym, role=role))
     db.session.commit()
     return "Succes"
 
@@ -267,6 +269,7 @@ def get_users():
                    "name": user.name,
                    "email": user.email,
                    "password":   user.password,
+                   "role": user.role,
                    "uuid": user.uuid}
          for user in db.session.query(User)}
 
@@ -295,7 +298,7 @@ if __name__ == "__main__":
         print("Creates database")
         db.create_all()
         db.session.add(Gym(uuid="UnknowGym", name="Unknown Gym", lat=1, lon=1))
-        db.session.add(User(uuid="admin", name="admin", password="admin", email="", gym="UnknowGym"))
+        db.session.add(User(uuid="admin", name="admin", password="admin", email="", gym="UnknowGym", role="ADMIN"))
         db.session.commit()
 
 
