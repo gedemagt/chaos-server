@@ -236,6 +236,15 @@ def delete_image(uuid):
 
     return "Succes", 200
 
+@app.route('/check_gymname/<string:name>', methods=['POST'])
+def check_gymname(name):
+
+    gym = db.session.query(Gym).filter_by(name=name).first()
+    if gym is None:
+        return "Success"
+    else:
+        abort(400)
+
 
 @app.route('/get_gyms', methods=['GET'])
 def get_gyms():
