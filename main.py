@@ -257,10 +257,12 @@ def get_rutes():
 @login_required
 def download_image(uuid):
 
-    url = db.session.query(Image).filter_by(uuid=uuid).first().url
-    if not os.path.exists(url):
-        return "No file", 204
-    return send_from_directory('static', os.path.relpath(url, 'static'))
+    img = db.session.query(Image).filter_by(uuid=uuid).first()
+    if img is None:
+        abort(400)
+    if not os.path.exists(img.url):
+        abort(400)
+    return send_from_directory('static', os.path.relpath(img.url, 'static'))
 
 
 @app.route('/delete/<string:uuid>', methods=['POST'])

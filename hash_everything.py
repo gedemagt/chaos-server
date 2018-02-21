@@ -12,7 +12,7 @@ users = c.execute('SELECT id,name,password,uuid FROM user').fetchall()
 for id, name, password, uuid in users:
     if not password.startswith("$2a$"):
         hash = bcrypt.hashpw(password, bcrypt.gensalt())
-        p = c.execute('UPDATE user SET password="{}"'.format(hash))
+        p = c.execute('UPDATE user SET password="{}" WHERE id={}'.format(hash, id))
 
 conn.commit()
 conn.close()
