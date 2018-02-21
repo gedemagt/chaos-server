@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
 
 
 def get_sql_position():
@@ -15,7 +16,10 @@ def get_sql_position():
 
 app = Flask(__name__, static_folder="static")
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + get_sql_position()
+app.secret_key = "ReallySecret2"
 db = SQLAlchemy(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 
 class Gym(db.Model):
@@ -76,12 +80,30 @@ class Rating(db.Model):
     date = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class UserClass(UserMixin):
+
+    def __init__(self, uuid):
+        self.uuid = uuid
+
+    def get_id(self):
+        return self.uuid
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    user = db.session.query(User).filter_by(name=user_id).first()
+    if user is None:
+        return None
+    return UserClass(user_id)
+
+
 @app.route('/', methods=['GET'])
 def index():
     return 'Hello'
 
 
 @app.route('/add_rute', methods=['POST'])
+@login_required
 def upload():
     uuid = request.json['uuid']
     if db.session.query(Rute).filter_by(uuid=uuid).first() is not None:
@@ -104,6 +126,7 @@ def upload():
 
 
 @app.route('/add_image/<string:uuid>', methods=['POST'])
+@login_required
 def upload_image(uuid):
     f = request.files['file']
     filename = os.path.join('static', "{}.jpg".format(uuid))
@@ -127,10 +150,20 @@ def login():
     if user.password != password:
         abort(400)
 
+    login_user(UserClass(username))
+
     return user.uuid
 
 
+@app.route('/logout', methods=['GET'])
+def logout():
+    logout_user()
+    return 200
+
+
+
 @app.route('/update_coordinates', methods=['POST'])
+@login_required
 def update_coordinates():
 
     uuid = request.json['uuid']
@@ -156,6 +189,7 @@ def update_coordinates():
 
 
 @app.route('/add_user', methods=['POST'])
+@login_required
 def add_user():
     username = request.json['username']
     password = request.json['password']
@@ -171,12 +205,12 @@ def add_user():
 
 
 @app.route('/add_gym', methods=['POST'])
+@login_required
 def add_gym():
     name = request.json['name']
     lat = request.json['lat']
     lon = request.json['lon']
     uuid = request.json['uuid']
-    print(db.session.query(Gym).filter_by(name=name).first())
 
     if db.session.query(Gym).filter_by(name=name).first() is not None:
         abort(400)
@@ -197,6 +231,7 @@ def check_name(name):
 
 
 @app.route('/get_rutes', methods=['GET','POST'])
+@login_required
 def get_rutes():
     last_sync = '1900-02-13 22:25:33'
     if request.json and 'last_sync' in request.json:
@@ -218,6 +253,7 @@ def get_rutes():
 
 
 @app.route('/download/<string:uuid>', methods=['GET', 'POST'])
+@login_required
 def download_image(uuid):
 
     url = db.session.query(Image).filter_by(uuid=uuid).first().url
@@ -227,6 +263,7 @@ def download_image(uuid):
 
 
 @app.route('/delete/<string:uuid>', methods=['POST'])
+@login_required
 def delete_image(uuid):
     rute = db.session.query(Rute).filter_by(uuid=uuid).first()
     if rute is not None:
@@ -235,6 +272,7 @@ def delete_image(uuid):
     db.session.commit()
 
     return "Succes", 200
+
 
 @app.route('/check_gymname/<string:name>', methods=['POST'])
 def check_gymname(name):
@@ -247,6 +285,7 @@ def check_gymname(name):
 
 
 @app.route('/get_gyms', methods=['GET'])
+@login_required
 def get_gyms():
     r = {gym.id: {"lat": gym.lat,
                   "date": str(gym.date),
@@ -259,6 +298,7 @@ def get_gyms():
 
 
 @app.route('/get_gym/<string:uuid>', methods=['GET'])
+@login_required
 def get_gym(uuid):
 
     gym = db.session.query(Gym).filter_by(uuid=uuid).first()
@@ -272,6 +312,7 @@ def get_gym(uuid):
 
 
 @app.route('/get_users', methods=['GET'])
+@login_required
 def get_users():
     r = {user.id: {"gym": user.gym,
                    "date": str(user.date),
@@ -286,6 +327,7 @@ def get_users():
 
 
 @app.route('/get_user/<string:uuid>', methods=['GET'])
+@login_required
 def get_user(uuid):
 
     user = db.session.query(User).filter_by(uuid=uuid).first()
