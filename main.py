@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
-
+import bcrypt
 
 def get_sql_position():
     path = os.path.join(os.path.dirname(__file__), 'sql_path.txt')
@@ -147,7 +147,7 @@ def login():
     if user is None:
         abort(400)
 
-    if user.password != password:
+    if not bcrypt.checkpw(password, user.password):
         abort(400)
 
     login_user(UserClass(username))
@@ -193,6 +193,7 @@ def update_coordinates():
 def add_user():
     username = request.json['username']
     password = request.json['password']
+    password = bcrypt.hashpw(password, bcrypt.gensalt())
     email = request.json['email']
     gym = request.json['gym']
     uuid = request.json['uuid']
