@@ -158,7 +158,7 @@ def login():
 @app.route('/logout', methods=['GET'])
 def logout():
     logout_user()
-    return 200
+    return "Succes"
 
 
 
