@@ -28,6 +28,15 @@ class Gym(db.Model):
     uuid = db.Column(db.String)
     lat = db.Column(db.String)
     lon = db.Column(db.String)
+    admin = db.Column(db.String)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Sector(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    uuid = db.Column(db.String)
+    gym = db.Column(db.String)
     date = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -50,6 +59,7 @@ class Rute(db.Model):
     coordinates = db.Column(db.String, default="{}")
     author = db.Column(db.Integer, db.ForeignKey('user.id'))
     gym = db.Column(db.Integer, db.ForeignKey('gym.id'))
+    sector = db.Column(db.String)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     edit = db.Column(db.DateTime, default=datetime.utcnow)
     grade = db.Column(db.String, default="NO_GRADE")
@@ -205,6 +215,36 @@ def add_user():
     return "Succes"
 
 
+@app.route('/add_sector', methods=['POST'])
+@login_required
+def add_sector():
+    name = request.json['name']
+    gym = request.json['gym']
+    uuid = request.json['uuid']
+    date = datetime.strptime(request.json['date'], '%Y-%m-%d %H:%M:%S')
+    if db.session.query(Sector).filter_by(gym=gym, name=name).first():
+        abort(400)
+    db.session.add(Sector(uuid=uuid, name=name, gym=gym, date=date))
+    db.session.commit()
+    return "Succes"
+
+
+@app.route('/get_sector/<string:uuid>', methods=['GET'])
+@login_required
+def get_sector(uuid):
+
+    sector = db.session.query(Sector).filter_by(uuid=uuid).first()
+    if sector is None:
+        abort(400)
+
+    r = {uuid: {
+                  "date": str(sector.date),
+                  "gym": sector.gym,
+                  "name": sector.name,
+                  "uuid": sector.uuid}}
+    return jsonify(r), 200
+
+
 @app.route('/add_gym', methods=['POST'])
 @login_required
 def add_gym():
@@ -294,7 +334,8 @@ def get_gyms():
                   "date": str(gym.date),
                   "lon": gym.lon,
                   "name": gym.name,
-                  "uuid": gym.uuid}
+                  "uuid": gym.uuid,
+                  "sectors": [{"name": x.name, "uuid": x.uuid, "date": str(x.date)} for x in db.session.query(Sector).filter_by(gym=gym.uuid)]}
          for gym in db.session.query(Gym)}
 
     return jsonify(r), 200
@@ -305,12 +346,15 @@ def get_gyms():
 def get_gym(uuid):
 
     gym = db.session.query(Gym).filter_by(uuid=uuid).first()
+    sectors = db.session.query(Sector).filter_by(gym=uuid)
 
     r = {uuid: {"lat": gym.lat,
                   "date": str(gym.date),
                   "lon": gym.lon,
                   "name": gym.name,
-                  "uuid": gym.uuid}}
+                  "uuid": gym.uuid,
+                    "sectors": [{"name":x.name, "uuid": x.uuid, "date": str(x.date)} for x in sectors]
+                }}
     return jsonify(r), 200
 
 
