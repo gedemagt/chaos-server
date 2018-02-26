@@ -29,15 +29,11 @@ class Gym(db.Model):
     lat = db.Column(db.String)
     lon = db.Column(db.String)
     admin = db.Column(db.String)
+    sectors = db.Column(db.String)
+    tags = db.Column(db.String)
     date = db.Column(db.DateTime, default=datetime.utcnow)
-
-
-class Sector(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    uuid = db.Column(db.String)
-    gym = db.Column(db.String)
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    edit = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.Integer, default=0)
 
 
 class User(db.Model):
@@ -60,10 +56,12 @@ class Rute(db.Model):
     author = db.Column(db.Integer, db.ForeignKey('user.id'))
     gym = db.Column(db.Integer, db.ForeignKey('gym.id'))
     sector = db.Column(db.String)
+    tag = db.Column(db.String)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     edit = db.Column(db.DateTime, default=datetime.utcnow)
     grade = db.Column(db.String, default="NO_GRADE")
     status = db.Column(db.Integer, default=0)
+
 
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -122,14 +120,14 @@ def upload():
     name = request.json['name']
     image = request.json['image']
     author = request.json['author']
-    gym = request.json['gym']
+    sector = request.json['sector']
     date = request.json['date']
     edit = request.json['edit']
     date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
     edit = datetime.strptime(edit, '%Y-%m-%d %H:%M:%S')
     grade = request.json['grade'] if 'grade' in request.json else 'NO_GRADE'
 
-    db.session.add(Rute(uuid=uuid, name=name, coordinates="[]", author=author, gym=gym, date=date, edit=edit, image=image, grade=grade))
+    db.session.add(Rute(uuid=uuid, name=name, coordinates="[]", author=author, sector=sector, date=date, edit=edit, image=image, grade=grade))
     db.session.commit()
 
     return str(db.session.query(Rute).order_by(Rute.id.desc()).first().id)
@@ -215,34 +213,34 @@ def add_user():
     return "Succes"
 
 
-@app.route('/add_sector', methods=['POST'])
-@login_required
-def add_sector():
-    name = request.json['name']
-    gym = request.json['gym']
-    uuid = request.json['uuid']
-    date = datetime.strptime(request.json['date'], '%Y-%m-%d %H:%M:%S')
-    if db.session.query(Sector).filter_by(gym=gym, name=name).first():
-        abort(400)
-    db.session.add(Sector(uuid=uuid, name=name, gym=gym, date=date))
-    db.session.commit()
-    return "Succes"
+# @app.route('/add_sector', methods=['POST'])
+# @login_required
+# def add_sector():
+#     name = request.json['name']
+#     gym = request.json['gym']
+#     uuid = request.json['uuid']
+#     date = datetime.strptime(request.json['date'], '%Y-%m-%d %H:%M:%S')
+#     if db.session.query(Sector).filter_by(gym=gym, name=name).first():
+#         abort(400)
+#     db.session.add(Sector(uuid=uuid, name=name, gym=gym, date=date))
+#     db.session.commit()
+#     return "Succes"
 
-
-@app.route('/get_sector/<string:uuid>', methods=['GET'])
-@login_required
-def get_sector(uuid):
-
-    sector = db.session.query(Sector).filter_by(uuid=uuid).first()
-    if sector is None:
-        abort(400)
-
-    r = {uuid: {
-                  "date": str(sector.date),
-                  "gym": sector.gym,
-                  "name": sector.name,
-                  "uuid": sector.uuid}}
-    return jsonify(r), 200
+#
+# @app.route('/get_sector/<string:uuid>', methods=['GET'])
+# @login_required
+# def get_sector(uuid):
+#
+#     sector = db.session.query(Sector).filter_by(uuid=uuid).first()
+#     if sector is None:
+#         abort(400)
+#
+#     r = {uuid: {
+#                   "date": str(sector.date),
+#                   "gym": sector.gym,
+#                   "name": sector.name,
+#                   "uuid": sector.uuid}}
+#     return jsonify(r), 200
 
 
 @app.route('/add_gym', methods=['POST'])
@@ -257,6 +255,30 @@ def add_gym():
         abort(400)
     else:
         db.session.add(Gym(uuid=uuid, name=name, lat=lat, lon=lon))
+        db.session.commit()
+        return "Succes"
+
+
+@app.route('/save_gym', methods=['POST'])
+@login_required
+def save_gym():
+    name = request.json['name']
+    lat = request.json['lat']
+    lon = request.json['lon']
+    uuid = request.json['uuid']
+    sectors = request.json['sectors']
+    tags = request.json['tags']
+
+    gym = db.session.query(Gym).filter_by(uuid=uuid).first()
+    if gym is None:
+        abort(400)
+    else:
+        gym.name = name
+        gym.lat = lat
+        gym.lon = lon
+        gym.sectors = sectors
+        gym.tags = tags
+
         db.session.commit()
         return "Succes"
 
@@ -284,6 +306,8 @@ def get_rutes():
                    "edit": str(rute.edit),
                    "coordinates": rute.coordinates,
                    "gym": rute.gym,
+                   "sector": rute.sector,
+                   "tag": rute.sector,
                    "name": rute.name,
                    "image": rute.image,
                    "uuid": rute.uuid,
@@ -332,12 +356,14 @@ def check_gymname(name):
 def get_gyms():
     r = {gym.id: {"lat": gym.lat,
                   "date": str(gym.date),
+                  "edit": str(gym.edit),
+                  "status": gym.status,
                   "lon": gym.lon,
                   "name": gym.name,
                   "uuid": gym.uuid,
-                  "sectors": [{"name": x.name, "uuid": x.uuid, "date": str(x.date)} for x in db.session.query(Sector).filter_by(gym=gym.uuid)]}
+                  "tags": gym.tags,
+                  "sectors": gym.sectors}
          for gym in db.session.query(Gym)}
-
     return jsonify(r), 200
 
 
@@ -346,15 +372,16 @@ def get_gyms():
 def get_gym(uuid):
 
     gym = db.session.query(Gym).filter_by(uuid=uuid).first()
-    sectors = db.session.query(Sector).filter_by(gym=uuid)
 
     r = {uuid: {"lat": gym.lat,
                   "date": str(gym.date),
+                  "edit": str(gym.edit),
+                  "status": gym.status,
                   "lon": gym.lon,
                   "name": gym.name,
                   "uuid": gym.uuid,
-                    "sectors": [{"name":x.name, "uuid": x.uuid, "date": str(x.date)} for x in sectors]
-                }}
+                  "tags": gym.tags,
+                  "sectors": gym.sectors}}
     return jsonify(r), 200
 
 
