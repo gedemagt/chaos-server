@@ -177,7 +177,6 @@ def update_coordinates():
     uuid = request.json['uuid']
 
     coordinates = request.json['coordinates']
-
     edit = request.json['edit']
     edit = datetime.strptime(edit, '%Y-%m-%d %H:%M:%S')
 
@@ -191,6 +190,8 @@ def update_coordinates():
         rute.gym = request.json["gym"]
     if 'grade' in request.json:
         rute.grade = request.json['grade']
+    if 'sector' in request.json:
+        rute.sector = request.json['sector']
     rute.edit = edit
     db.session.commit()
     return "Succes"
