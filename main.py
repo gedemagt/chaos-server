@@ -166,7 +166,7 @@ def login():
 @app.route('/logout', methods=['GET'])
 def logout():
     logout_user()
-    return 200
+    return "Succes"
 
 
 
@@ -352,7 +352,6 @@ def check_gymname(name):
 
 
 @app.route('/get_gyms', methods=['GET'])
-@login_required
 def get_gyms():
     r = {gym.id: {"lat": gym.lat,
                   "date": str(gym.date),
@@ -368,7 +367,6 @@ def get_gyms():
 
 
 @app.route('/get_gym/<string:uuid>', methods=['GET'])
-@login_required
 def get_gym(uuid):
 
     gym = db.session.query(Gym).filter_by(uuid=uuid).first()
