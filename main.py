@@ -45,6 +45,8 @@ class User(db.Model):
     role = db.Column(db.String)
     gym = db.Column(db.Integer, db.ForeignKey('gym.id'))
     date = db.Column(db.DateTime, default=datetime.utcnow)
+    edit = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.Integer, default=0)
 
 
 class Rute(db.Model):
@@ -269,6 +271,7 @@ def save_gym():
     uuid = request.json['uuid']
     sectors = request.json['sectors']
     tags = request.json['tags']
+    edit = request.json['edit']
 
     gym = db.session.query(Gym).filter_by(uuid=uuid).first()
     if gym is None:
@@ -279,6 +282,7 @@ def save_gym():
         gym.lon = lon
         gym.sectors = sectors
         gym.tags = tags
+        gym.edit = edit
 
         db.session.commit()
         return "Succes"
@@ -337,6 +341,30 @@ def delete_image(uuid):
     if rute is not None:
         rute.status = 1
         rute.edit = datetime.utcnow()
+    db.session.commit()
+
+    return "Succes", 200
+
+
+@app.route('/delete_gym/<string:uuid>', methods=['POST'])
+@login_required
+def delete_gym(uuid):
+    gym = db.session.query(Gym).filter_by(uuid=uuid).first()
+    if gym is not None:
+        gym.status = 1
+        gym.edit = datetime.utcnow()
+    db.session.commit()
+
+    return "Succes", 200
+
+
+@app.route('/delete_user/<string:uuid>', methods=['POST'])
+@login_required
+def delete_user(uuid):
+    user = db.session.query(User).filter_by(uuid=uuid).first()
+    if user is not None:
+        user.status = 1
+        user.edit = datetime.utcnow()
     db.session.commit()
 
     return "Succes", 200
@@ -410,6 +438,7 @@ def get_user(uuid):
                    "name": user.name,
                     "password": user.password,
                     "uuid": user.uuid,
+                   "role": user.role,
                    "email": user.email}}
 
     return jsonify(r), 200
