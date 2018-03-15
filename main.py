@@ -109,8 +109,13 @@ def load_user(user_id):
 
 @app.route('/', methods=['GET'])
 def index():
-    return 'Hello'
+    with open("privacy.html") as f:
+        return f.read()
+    return "JOHN"
 
+@app.route('/privacy', methods=['GET', 'POST'])
+def privacy():
+    return app.send_static_file("privacy.html")
 
 @app.route('/add_rute', methods=['POST'])
 @login_required
