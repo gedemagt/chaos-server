@@ -128,13 +128,15 @@ def upload():
     image = request.json['image']
     author = request.json['author']
     sector = request.json['sector']
+    gym = request.json['gym']
     date = request.json['date']
     edit = request.json['edit']
     date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
     edit = datetime.strptime(edit, '%Y-%m-%d %H:%M:%S')
     grade = request.json['grade'] if 'grade' in request.json else 'NO_GRADE'
+    tag = request.json['tag'] if 'tag' in request.json else ''
 
-    db.session.add(Rute(uuid=uuid, name=name, coordinates="[]", author=author, sector=sector, date=date, edit=edit, image=image, grade=grade))
+    db.session.add(Rute(uuid=uuid, name=name, coordinates="[]", author=author, sector=sector, date=date, edit=edit, image=image, grade=grade, gym=gym, tag=tag))
     db.session.commit()
 
     return str(db.session.query(Rute).order_by(Rute.id.desc()).first().id)
@@ -199,13 +201,14 @@ def update_coordinates():
         rute.grade = request.json['grade']
     if 'sector' in request.json:
         rute.sector = request.json['sector']
+    if 'tag' in request.json:
+        rute.sector = request.json['tag']
     rute.edit = edit
     db.session.commit()
     return "Succes"
 
 
 @app.route('/add_user', methods=['POST'])
-@login_required
 def add_user():
     username = request.json['username']
     password = request.json['password']
@@ -321,6 +324,7 @@ def get_rutes():
                    "name": rute.name,
                    "image": rute.image,
                    "uuid": rute.uuid,
+                   "tag": rute.tag,
                    "status": rute.status}
          for rute in db.session.query(Rute).filter(Rute.edit > last_sync)}
 
