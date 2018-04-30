@@ -1,25 +1,10 @@
-from flask import Flask, request, jsonify, send_from_directory, abort
-from flask_sqlalchemy import SQLAlchemy
+from flask import request, jsonify, send_from_directory, abort
 from datetime import datetime
 import os
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
+from flask_login import UserMixin, login_user, login_required, logout_user
 import bcrypt
-
-def get_sql_position():
-    path = os.path.join(os.path.dirname(__file__), 'sql_path.txt')
-    if not os.path.exists(path):
-        raise ValueError("No 'sql_path.txt' found! Please place a sql_path.txt in the same directory as main.py"
-                         "with one line: The path to the database!")
-    with open(path) as f:
-        return f.readline()
-
-
-app = Flask(__name__, static_folder="static")
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + get_sql_position()
-app.secret_key = "ReallySecret2"
-db = SQLAlchemy(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
+from server import db, app, login_manager, get_sql_position
+from competition import competition
 
 
 class Gym(db.Model):
@@ -451,6 +436,49 @@ def get_user(uuid):
                    "email": user.email}}
 
     return jsonify(r), 200
+
+
+@app.route('/get_comp/<int:pin>', methods=['GET'])
+def get_comp(pin):
+    print(pin)
+    comp = db.session.query(competition.Competition).filter_by(pin=pin).first()
+    if comp is None:
+        abort(400)
+
+    r = {"uuid": comp.uuid,
+         "name": comp.name,
+         "date": str(comp.date),
+         "edit": str(comp.edit),
+         "start": str(comp.start),
+         "stop": str(comp.stop),
+         "type": comp.type,
+         "admins": comp.admins.split(","),
+         "pin": comp.pin,
+         "rutes": [rute.uuid for rute, _ in db.session.query(Rute, competition.CompetitionRutes).filter(
+             competition.CompetitionRutes.comp == comp.uuid).filter(competition.CompetitionRutes.rute == Rute.uuid)]
+         }
+
+    return jsonify(r), 200
+
+
+@app.route('/get_part', methods=['POST'])
+def get_participation():
+    comp = request.json['comp']
+    user = request.json['user']
+
+    part = db.session.query(competition.CompetitionParticipation).filter_by(comp=comp, user=user)
+    if part is None:
+        abort(400)
+
+    r = [{"user": p.user,
+          "comp": p.comp,
+          "rute": p.rute,
+          "tries": p.tries,
+          "completed": p.completed,
+          "date": str(p.date)} for p in part]
+
+    return jsonify(r), 200
+
 
 
 if __name__ == "__main__":
