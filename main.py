@@ -482,18 +482,24 @@ def get_comps():
 def get_participation():
     comp = request.json['comp']
     user = request.json['user']
+    rute = request.json['rute']
 
-    part = db.session.query(competition.CompetitionParticipation).filter_by(comp=comp, user=user)
-    if part is None:
-        abort(400)
+    p = db.session.query(competition.CompetitionParticipation).filter_by(comp=comp, user=user, rute=rute).first()
+    if p is None:
+        tries = 0;
+        completed = False
+        date = "1970-01-01 00:00:00"
+    else:
+        tries = p.tries
+        completed = p.completed
+        date = str(p.date)
 
-    r = [{"user": p.user,
-          "comp": p.comp,
-          "rute": p.rute,
-          "tries": p.tries,
-          "completed": p.completed,
-          "date": str(p.date)} for p in part]
-
+    r = {"user": user,
+          "comp": comp,
+          "rute": rute,
+          "tries": tries,
+          "completed": completed,
+          "date": date}
     return jsonify(r), 200
 
 
@@ -527,6 +533,18 @@ def update_participation():
     return "Success", 200
 
 
+@app.route('/add_rute_comp', methods=['POST'])
+def add_rute():
+    comp = request.json['comp']
+    rute = request.json['rute']
+    date = parse_or_now("date", request.json)
+
+    db.session.add(competition.CompetitionRutes(comp=comp, rute=rute, date=date))
+    db.session.commit()
+
+    return "Success", 200
+
+
 @app.route('/update_comp', methods=['POST'])
 def update_comp():
     uuid = request.json['uuid']
@@ -546,6 +564,7 @@ def update_comp():
         db.session.add(competition.Competition(uuid=uuid, name=name, edit=edit, start=start, stop=stop, type=type, admins=admins, date=date, pin=pin))
         db.session.commit()
     else:
+        pin = comp.pin
         comp.name = name
         comp.edit = edit
         comp.start = start
@@ -554,7 +573,7 @@ def update_comp():
         comp.admins = admins
         db.session.commit()
 
-    return "Success", 200
+    return "{}".format(pin), 200
 
 
 if __name__ == "__main__":
