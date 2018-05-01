@@ -5,7 +5,7 @@ from flask_login import UserMixin, login_user, login_required, logout_user
 import bcrypt
 from server import db, app, login_manager, get_sql_position
 from competition import competition
-
+from random import randint
 
 class Gym(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -440,7 +440,6 @@ def get_user(uuid):
 
 @app.route('/get_comp/<int:pin>', methods=['GET'])
 def get_comp(pin):
-    print(pin)
     comp = db.session.query(competition.Competition).filter_by(pin=pin).first()
     if comp is None:
         abort(400)
@@ -457,6 +456,24 @@ def get_comp(pin):
          "rutes": [rute.uuid for rute, _ in db.session.query(Rute, competition.CompetitionRutes).filter(
              competition.CompetitionRutes.comp == comp.uuid).filter(competition.CompetitionRutes.rute == Rute.uuid)]
          }
+
+    return jsonify(r), 200
+
+
+@app.route('/get_comps', methods=['GET'])
+def get_comps():
+    r = [{"uuid": comp.uuid,
+         "name": comp.name,
+         "date": str(comp.date),
+         "edit": str(comp.edit),
+         "start": str(comp.start),
+         "stop": str(comp.stop),
+         "type": comp.type,
+         "admins": comp.admins.split(","),
+         "pin": comp.pin,
+         "rutes": [rute.uuid for rute, _ in db.session.query(Rute, competition.CompetitionRutes).filter(
+             competition.CompetitionRutes.comp == comp.uuid).filter(competition.CompetitionRutes.rute == Rute.uuid)]
+         } for comp in db.session.query(competition.Competition)]
 
     return jsonify(r), 200
 
@@ -479,6 +496,65 @@ def get_participation():
 
     return jsonify(r), 200
 
+
+def parse_or_now(key, container):
+    if key in container:
+        return datetime.strptime(container[key],'%Y-%m-%d %H:%M:%S')
+    else:
+        return datetime.utcnow()
+
+
+@app.route('/update_part', methods=['POST'])
+def update_participation():
+    comp = request.json['comp']
+    user = request.json['user']
+    rute = request.json['rute']
+    tries = request.json['tries']
+    date = parse_or_now("date", request.json)
+    edit = parse_or_now("edit", request.json)
+    completed = request.json['completed']
+
+    part = db.session.query(competition.CompetitionParticipation).filter_by(comp=comp, user=user, rute=rute).first()
+    if part is None:
+        db.session.add(competition.CompetitionParticipation(comp=comp, user=user, rute=rute, tries=tries, completed=completed, date=date, edit=edit))
+        db.session.commit()
+    else:
+        part.tries = tries
+        part.completed = completed
+        part.edit = edit
+        db.session.commit()
+
+    return "Success", 200
+
+
+@app.route('/update_comp', methods=['POST'])
+def update_comp():
+    uuid = request.json['uuid']
+    name = request.json['name']
+    date = parse_or_now("date", request.json)
+    edit = parse_or_now("edit", request.json)
+    start = parse_or_now("start", request.json)
+    stop = parse_or_now("stop", request.json)
+    type = request.json['type']
+    admins = request.json['admins']
+
+    comp = db.session.query(competition.Competition).filter_by(uuid=uuid).first()
+    if comp is None:
+        pin = randint(1000,9999)
+        while db.session.query(competition.Competition).filter_by(pin=pin).first():
+            pin = randint(1000, 9999)
+        db.session.add(competition.Competition(uuid=uuid, name=name, edit=edit, start=start, stop=stop, type=type, admins=admins, date=date, pin=pin))
+        db.session.commit()
+    else:
+        comp.name = name
+        comp.edit = edit
+        comp.start = start
+        comp.stop = stop
+        comp.type = type
+        comp.admins = admins
+        db.session.commit()
+
+    return "Success", 200
 
 
 if __name__ == "__main__":
