@@ -454,7 +454,7 @@ def get_comp(pin):
          "admins": comp.admins.split(","),
          "pin": comp.pin,
          "rutes": [rute.uuid for rute, _ in db.session.query(Rute, competition.CompetitionRutes).filter(
-             competition.CompetitionRutes.comp == comp.uuid).filter(competition.CompetitionRutes.rute == Rute.uuid)]
+             competition.CompetitionRutes.comp == comp.uuid).filter(competition.CompetitionRutes.rute == Rute.uuid).filter(Rute.status != 1)]
          }
 
     return jsonify(r), 200
@@ -481,9 +481,9 @@ def get_comps():
          "admins": comp.admins.split(","),
          "pin": comp.pin,
          "rutes": [rute.uuid for rute, _ in db.session.query(Rute, competition.CompetitionRutes).filter(
-             competition.CompetitionRutes.comp == comp.uuid).filter(competition.CompetitionRutes.rute == Rute.uuid)]
+             competition.CompetitionRutes.comp == comp.uuid).filter(competition.CompetitionRutes.rute == Rute.uuid).filter(Rute.status != 1)]
          } for comp in db.session.query(competition.Competition)]
-
+    print(r)
     return jsonify(r), 200
 
 
