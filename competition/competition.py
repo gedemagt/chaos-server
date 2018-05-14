@@ -3,6 +3,7 @@ from flask import request, abort, jsonify
 from db import db
 from datetime import datetime
 
+
 class Competition(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String)

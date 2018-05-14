@@ -460,6 +460,15 @@ def get_comp(pin):
     return jsonify(r), 200
 
 
+@app.route('/get_participated_comps/<string:user>', methods=['GET'])
+def get_participated_comps(user):
+    comp = db.session.query(competition.CompetitionParticipation).filter_by(user=user)
+
+    comps = list(set([c.comp for c in comp]))
+
+    return jsonify(comps), 200
+
+
 @app.route('/get_comps', methods=['GET'])
 def get_comps():
     r = [{"uuid": comp.uuid,
@@ -486,8 +495,8 @@ def get_participation():
 
     p = db.session.query(competition.CompetitionParticipation).filter_by(comp=comp, user=user, rute=rute).first()
     if p is None:
-        tries = 0;
-        completed = False
+        tries = 0
+        completed = 0
         date = "1970-01-01 00:00:00"
     else:
         tries = p.tries
@@ -500,6 +509,7 @@ def get_participation():
           "tries": tries,
           "completed": completed,
           "date": date}
+    print(r)
     return jsonify(r), 200
 
 
@@ -558,7 +568,7 @@ def update_comp():
 
     comp = db.session.query(competition.Competition).filter_by(uuid=uuid).first()
     if comp is None:
-        pin = randint(1000,9999)
+        pin = randint(1000, 9999)
         while db.session.query(competition.Competition).filter_by(pin=pin).first():
             pin = randint(1000, 9999)
         db.session.add(competition.Competition(uuid=uuid, name=name, edit=edit, start=start, stop=stop, type=type, admins=admins, date=date, pin=pin))
@@ -574,6 +584,22 @@ def update_comp():
         db.session.commit()
 
     return "{}".format(pin), 200
+
+
+@app.route('/get_stats/<int:pin>', methods=['GET'])
+def get_stats(pin):
+    comp = db.session.query(competition.Competition).filter_by(pin=pin).first()
+    if comp is None:
+        abort(400)
+
+    r = [{"user": p.user,
+         "rute": p.rute,
+         "tries": p.tries,
+         "date": str(p.date),
+         "completed": p.completed} for p in db.session.query(competition.CompetitionParticipation).filter(
+        competition.CompetitionParticipation.comp == comp.uuid)]
+
+    return jsonify(r), 200
 
 
 if __name__ == "__main__":
