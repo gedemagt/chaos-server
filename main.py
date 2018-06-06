@@ -298,7 +298,7 @@ def get_rutes():
     if request.json and 'last_sync' in request.json:
         last_sync = request.json.get('last_sync')
 
-    r = {rute.id: {"author": rute.author,
+    r = {str(rute.id): {"author": rute.author,
                    "grade": rute.grade,
                    "date": str(rute.date),
                    "edit": str(rute.edit),
@@ -313,7 +313,7 @@ def get_rutes():
                    "status": rute.status}
          for rute in db.session.query(Rute).filter(Rute.edit > last_sync)}
 
-    r.update({"last_sync": str(datetime.utcnow())})
+    r.update({"last_sync": str(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))})
     return jsonify(r), 200
 
 
