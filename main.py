@@ -313,6 +313,7 @@ def get_rutes():
                    "status": rute.status}
          for rute in db.session.query(Rute).filter(Rute.edit > last_sync)}
 
+    r.update({"last_sync": str(datetime.utcnow())})
     return jsonify(r), 200
 
 
